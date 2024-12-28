@@ -1,6 +1,6 @@
 namespace InvertedIndexServer.InvertedIndex;
 
-public class ConcurrentInvertedIndex<TKey, TValue> where TKey : notnull
+public class ConcurrentInvertedIndex<TKey, TValue> : IInvertedIndex<TKey, TValue> where TKey : notnull
 {
     private readonly Dictionary<TKey, HashSet<TValue>> _wordDictionary = new();
     private readonly object _indexLock = new();
@@ -16,6 +16,19 @@ public class ConcurrentInvertedIndex<TKey, TValue> where TKey : notnull
         }
 
         return true;
+    }
+
+    public bool TryRemoveValue(TKey key, TValue value)
+    {
+        lock (_indexLock)
+        {
+            if (!_wordDictionary.TryGetValue(key, out var values)) return false;
+            if (!values.Remove(value)) return false;
+            if (values.Count == 0)
+                _wordDictionary.Remove(key);
+            
+            return true;
+        }
     }
 
     public bool TryGetValue(TKey key, out HashSet<TValue>? values)
