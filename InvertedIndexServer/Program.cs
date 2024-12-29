@@ -1,4 +1,6 @@
-﻿const string baseUrl = "http://localhost:5003/";
+﻿using System.Collections.Concurrent;
+
+const string baseUrl = "http://localhost:5003/";
 var server = new InvertedIndexServer.InvertedIndexServer(4, baseUrl);
 
 try

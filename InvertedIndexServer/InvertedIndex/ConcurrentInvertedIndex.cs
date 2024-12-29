@@ -1,6 +1,9 @@
+using System.Collections;
+
 namespace InvertedIndexServer.InvertedIndex;
 
-public class ConcurrentInvertedIndex<TKey, TValue> : IInvertedIndex<TKey, TValue> where TKey : notnull
+public class ConcurrentInvertedIndex<TKey, TValue> : IInvertedIndex<TKey, TValue>,
+    IEnumerable<TKey> where TKey : notnull
 {
     private readonly Dictionary<TKey, HashSet<TValue>> _wordDictionary = new();
     private readonly object _indexLock = new();
@@ -45,5 +48,22 @@ public class ConcurrentInvertedIndex<TKey, TValue> : IInvertedIndex<TKey, TValue
         {
             return _wordDictionary.ContainsKey(key);
         }
+    }
+
+    public IEnumerator<TKey> GetEnumerator()
+    {
+        List<TKey> keysSnapshot;
+        lock (_indexLock)
+        {
+            keysSnapshot = [.._wordDictionary.Keys];
+        }
+
+        return keysSnapshot.GetEnumerator();
+    }
+
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

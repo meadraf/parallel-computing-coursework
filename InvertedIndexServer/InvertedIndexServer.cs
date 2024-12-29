@@ -9,19 +9,24 @@ public class InvertedIndexServer
 {
     private readonly ConcurrentInvertedIndex<string, string> _invertedIndex = new();
     private readonly InvertedIndexBuilder _invertedIndexBuilder = new();
+    private readonly IndexDataWatcher _indexDataWatcher;
     private readonly ThreadPool.ThreadPool _threadPool;
     private readonly HttpListener _httpListener;
+
+    private readonly ReaderWriterLockSlim _readerWriterLock = new();
 
     public InvertedIndexServer(int threadCount, string urlPrefix)
     {
         _threadPool = new ThreadPool.ThreadPool(threadCount);
         _httpListener = new HttpListener();
         _httpListener.Prefixes.Add(urlPrefix);
+        _indexDataWatcher = new IndexDataWatcher(_invertedIndex, _readerWriterLock);
     }
 
     public void Start()
     {
         _invertedIndexBuilder.BuildIndex(_invertedIndex);
+        _indexDataWatcher.StartWatching();
         _threadPool.Run();
         _httpListener.Start();
         Console.WriteLine("Server started...");
@@ -31,6 +36,7 @@ public class InvertedIndexServer
             var context = _httpListener.GetContext();
             _threadPool.AddTask(() => HandleRequest(context));
         }
+        _indexDataWatcher.StopWatching();
     }
 
     private void HandleRequest(HttpListenerContext context)
@@ -51,15 +57,23 @@ public class InvertedIndexServer
                 SendResponse(context, 400, "Bad Request: 'word' parameter is required.");
                 return;
             }
-            
-            if (_invertedIndex.TryGetValue(query.ToLowerInvariant(), out var fileNames))
+
+            _readerWriterLock.EnterReadLock();
+            try
             {
-                var responseJson = JsonSerializer.Serialize(fileNames);
-                SendResponse(context, 200, responseJson);
+                if (_invertedIndex.TryGetValue(query.ToLowerInvariant(), out var fileNames))
+                {
+                    var responseJson = JsonSerializer.Serialize(fileNames);
+                    SendResponse(context, 200, responseJson);
+                }
+                else
+                {
+                    SendResponse(context, 404, "Word not found in the index.");
+                }
             }
-            else
+            finally
             {
-                SendResponse(context, 404, "Word not found in the index.");
+                _readerWriterLock.ExitReadLock();
             }
         }
         catch (Exception ex)
