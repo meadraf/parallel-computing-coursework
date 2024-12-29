@@ -1,7 +1,6 @@
 using System.Text.RegularExpressions;
-using InvertedIndexServer.InvertedIndex;
 
-namespace InvertedIndexServer;
+namespace InvertedIndexServer.InvertedIndex;
 
 public partial class IndexDataWatcher
 {

@@ -12,6 +12,7 @@ public class InvertedIndexServer
     private readonly IndexDataWatcher _indexDataWatcher;
     private readonly ThreadPool.ThreadPool _threadPool;
     private readonly HttpListener _httpListener;
+    private volatile bool _isRunning;
 
     private readonly ReaderWriterLockSlim _readerWriterLock = new();
 
@@ -29,14 +30,28 @@ public class InvertedIndexServer
         _indexDataWatcher.StartWatching();
         _threadPool.Run();
         _httpListener.Start();
+        _isRunning = true;
         Console.WriteLine("Server started...");
+        Console.WriteLine("Type 'stop' to shutdown the server");
 
-        while (true)
+        Task.Run(HandleConsoleInput);
+
+        while (_isRunning)
         {
             var context = _httpListener.GetContext();
             _threadPool.AddTask(() => HandleRequest(context));
         }
-        _indexDataWatcher.StopWatching();
+    }
+
+    private void HandleConsoleInput()
+    {
+        while (_isRunning)
+        {
+            var command = Console.ReadLine()?.Trim().ToLower();
+            if (command != "stop") continue;
+            Stop();
+            break;
+        }
     }
 
     private void HandleRequest(HttpListenerContext context)
@@ -94,8 +109,10 @@ public class InvertedIndexServer
 
     public void Stop()
     {
+        _isRunning = false;
         _httpListener.Stop();
         _threadPool.Terminate();
+        _indexDataWatcher.StopWatching();
         Console.WriteLine("Server stopped.");
     }
 }
