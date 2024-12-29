@@ -1,5 +1,3 @@
-using InvertedIndexServer.CancellationToken;
-
 namespace InvertedIndexServer.ThreadPool;
 
 public class ThreadPool
@@ -8,8 +6,6 @@ public class ThreadPool
 
     private readonly List<Thread> _threads = [];
     private readonly MyConcurrentQueue<Action> _queue = new();
-    private readonly MyCancellationTokenSource _cancellationTokenSource = new();
-    private readonly MyCancellationToken _token;
 
     private readonly object _taskWaiter = new();
     private bool _isTerminated;
@@ -17,7 +13,6 @@ public class ThreadPool
 
     public ThreadPool(int threadCount)
     {
-        _token = _cancellationTokenSource.Token;
         for (var i = 0; i < threadCount; i++)
         {
             _threads.Add(new Thread(Routine));
@@ -80,8 +75,6 @@ public class ThreadPool
             Monitor.PulseAll(_taskWaiter);
         }
 
-        _cancellationTokenSource.Cancel();
-
         lock (_threads)
         {
             foreach (var thread in _threads)
@@ -92,7 +85,6 @@ public class ThreadPool
             _threads.Clear();
         }
 
-        _cancellationTokenSource.Reset();
         _isTerminated = false;
         IsRunning = false;
     }
