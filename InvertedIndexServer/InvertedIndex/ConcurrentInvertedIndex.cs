@@ -26,7 +26,7 @@ public class ConcurrentInvertedIndex<TKey, TValue> : IInvertedIndex<TKey, TValue
             if (!values.Remove(value)) return false;
             if (values.Count == 0)
                 _wordDictionary.Remove(key);
-            
+
             return true;
         }
     }

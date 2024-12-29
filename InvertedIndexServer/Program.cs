@@ -2,17 +2,19 @@
 using InvertedIndexServer.InvertedIndex;
 using InvertedIndexServer.ThreadPool;
 
-ConcurrentInvertedIndex<string, string> index = new ConcurrentInvertedIndex<string, string>();
-Dictionary<int, int> dictionary = new Dictionary<int, int>();
+var server = new InvertedIndexServer.InvertedIndexServer(4, "http://localhost:5000/");
 
-var invertedIndexBuilder = new InvertedIndexBuilder();
-invertedIndexBuilder.BuildIndex(index);
-
-Console.WriteLine(index.TryGetValue("house", out var values));
-
-foreach (var v in values)
+try
 {
-    Console.WriteLine(v);
+    server.Start();
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Server error: {ex.Message}");
+}
+finally
+{
+    server.Stop();
 }
 
 
