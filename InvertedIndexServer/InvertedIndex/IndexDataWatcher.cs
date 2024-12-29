@@ -4,7 +4,8 @@ namespace InvertedIndexServer.InvertedIndex;
 
 public partial class IndexDataWatcher
 {
-    private readonly string _folderPath = "IndexData";
+    private readonly Configuration _configuration = new();
+    
     private readonly ConcurrentInvertedIndex<string, string> _invertedIndex;
     private readonly FileSystemWatcher _fileSystemWatcher;
 
@@ -14,7 +15,7 @@ public partial class IndexDataWatcher
     {
         _invertedIndex = invertedIndex;
         _readerWriterLock = readerWriterLock;
-        _fileSystemWatcher = new FileSystemWatcher(_folderPath, "*.txt");
+        _fileSystemWatcher = new FileSystemWatcher(_configuration.IndexDataPath, "*.txt");
         _fileSystemWatcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite;
         _fileSystemWatcher.Created += OnFileCreated;
         _fileSystemWatcher.Deleted += OnFileDeleted;

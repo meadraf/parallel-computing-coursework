@@ -4,23 +4,17 @@ namespace InvertedIndexServer.InvertedIndex;
 
 public partial class InvertedIndexBuilder
 {
-    private readonly string _dataPath;
-
-    public InvertedIndexBuilder()
-    {
-        Directory.SetCurrentDirectory("../../../");
-        _dataPath = Directory.GetCurrentDirectory() + "/IndexData";
-    }
-
+    private readonly Configuration _configuration = new();
+    
     public void BuildIndex(ConcurrentInvertedIndex<string, string> invertedIndex)
     {
-        if (!Directory.Exists(_dataPath))
+        if (!Directory.Exists(_configuration.IndexDataPath))
         {
             Console.WriteLine("Folder does not exist.");
             return;
         }
 
-        var txtFiles = Directory.GetFiles(_dataPath, "*.txt");
+        var txtFiles = Directory.GetFiles(_configuration.IndexDataPath, "*.txt");
 
         foreach (var filePath in txtFiles)
         {
