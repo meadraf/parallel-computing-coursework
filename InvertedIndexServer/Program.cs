@@ -1,5 +1,5 @@
 ﻿const string baseUrl = "http://localhost:5003/";
-var server = new InvertedIndexServer.InvertedIndexServer(4, baseUrl);
+var server = new InvertedIndexServer.InvertedIndexServer(3, baseUrl);
 
 try
 {
