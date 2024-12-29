@@ -1,8 +1,5 @@
-﻿using System.Threading.Channels;
-using InvertedIndexServer.InvertedIndex;
-using InvertedIndexServer.ThreadPool;
-
-var server = new InvertedIndexServer.InvertedIndexServer(4, "http://localhost:5000/");
+﻿const string baseUrl = "http://localhost:5003/";
+var server = new InvertedIndexServer.InvertedIndexServer(4, baseUrl);
 
 try
 {
