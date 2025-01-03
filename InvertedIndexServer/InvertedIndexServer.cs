@@ -12,6 +12,7 @@ public class InvertedIndexServer
     private readonly IndexDataWatcher _indexDataWatcher;
     private readonly ThreadPool.ThreadPool _threadPool;
     private readonly HttpListener _httpListener;
+    
     private volatile bool _isRunning;
 
     private readonly ReaderWriterLockSlim _readerWriterLock = new();
@@ -26,7 +27,7 @@ public class InvertedIndexServer
 
     public void Start()
     {
-        _invertedIndexBuilder.BuildIndex(_invertedIndex);
+        _invertedIndexBuilder.BuildIndex(_invertedIndex, 3);
         _indexDataWatcher.StartWatching();
         _threadPool.Run();
         _httpListener.Start();

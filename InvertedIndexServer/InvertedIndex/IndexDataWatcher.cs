@@ -5,13 +5,14 @@ namespace InvertedIndexServer.InvertedIndex;
 public partial class IndexDataWatcher
 {
     private readonly Configuration _configuration = new();
-    
+
     private readonly ConcurrentInvertedIndex<string, string> _invertedIndex;
     private readonly FileSystemWatcher _fileSystemWatcher;
 
     private readonly ReaderWriterLockSlim _readerWriterLock;
 
-    public IndexDataWatcher(ConcurrentInvertedIndex<string, string> invertedIndex, ReaderWriterLockSlim readerWriterLock)
+    public IndexDataWatcher(ConcurrentInvertedIndex<string, string> invertedIndex,
+        ReaderWriterLockSlim readerWriterLock)
     {
         _invertedIndex = invertedIndex;
         _readerWriterLock = readerWriterLock;
@@ -33,15 +34,15 @@ public partial class IndexDataWatcher
 
     private void OnFileCreated(object sender, FileSystemEventArgs e)
     {
+        var fileContent = File.ReadAllText(e.FullPath);
+        fileContent = HtmlRegex().Replace(fileContent, string.Empty);
+        var words = PunctuationRegex().Matches(fileContent)
+            .Select(match => match.Value.ToLowerInvariant());
+        var fileName = Path.GetFileName(e.FullPath);
+        
         _readerWriterLock.EnterWriteLock();
         try
         {
-            var fileContent = File.ReadAllText(e.FullPath);
-            fileContent = HtmlRegex().Replace(fileContent, string.Empty);
-            var words = PunctuationRegex().Matches(fileContent)
-                .Select(match => match.Value.ToLowerInvariant());
-            var fileName = Path.GetFileName(e.FullPath);
-
             foreach (var word in words)
             {
                 _invertedIndex.TryAdd(word, fileName);
@@ -61,10 +62,11 @@ public partial class IndexDataWatcher
 
     private void OnFileDeleted(object sender, FileSystemEventArgs e)
     {
+        var fileName = Path.GetFileName(e.FullPath);
+        
         _readerWriterLock.EnterWriteLock();
         try
         {
-            var fileName = Path.GetFileName(e.FullPath);
             foreach (var key in _invertedIndex)
             {
                 _invertedIndex.TryRemoveValue(key, fileName);
@@ -84,6 +86,7 @@ public partial class IndexDataWatcher
 
     [GeneratedRegex("<[^>]+>")]
     private static partial Regex HtmlRegex();
+
     [GeneratedRegex(@"\b\w+\b")]
     private static partial Regex PunctuationRegex();
 }

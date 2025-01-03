@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace InvertedIndexServer.InvertedIndex;
@@ -5,9 +6,13 @@ namespace InvertedIndexServer.InvertedIndex;
 public partial class InvertedIndexBuilder
 {
     private readonly Configuration _configuration = new();
-    
-    public void BuildIndex(ConcurrentInvertedIndex<string, string> invertedIndex)
+    private readonly List<Thread> _threads = [];
+
+    public void BuildIndex(ConcurrentInvertedIndex<string, string> invertedIndex, int threadCount)
     {
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+
         if (!Directory.Exists(_configuration.IndexDataPath))
         {
             Console.WriteLine("Folder does not exist.");
@@ -16,8 +21,33 @@ public partial class InvertedIndexBuilder
 
         var txtFiles = Directory.GetFiles(_configuration.IndexDataPath, "*.txt");
 
-        foreach (var filePath in txtFiles)
+        for (var i = 0; i < threadCount; i++)
         {
+            var startingIndex = i;
+            _threads.Add(new Thread(() => IndexFiles(invertedIndex, txtFiles, startingIndex, threadCount)));
+        }
+        
+        foreach (var thread in _threads)
+        {
+            thread.Start();
+        }
+
+        foreach (var thread in _threads)
+        {
+            thread.Join();
+        }
+        
+        stopwatch.Stop();
+        Console.WriteLine($"Indexing time: {stopwatch.ElapsedMilliseconds}");
+        Console.WriteLine("Indexing complete.");
+    }
+
+    private static void IndexFiles(ConcurrentInvertedIndex<string, string> invertedIndex, string[] files, int start,
+        int step)
+    {
+        for (var i = start; i < files.Length; i += step)
+        {
+            var filePath = files[i];
             try
             {
                 var fileContent = File.ReadAllText(filePath);
@@ -33,16 +63,12 @@ public partial class InvertedIndexBuilder
                 {
                     invertedIndex.TryAdd(word, fileName);
                 }
-
-                Console.WriteLine($"Indexed file: {fileName}");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error processing file {filePath}: {ex.Message}");
             }
         }
-        
-        Console.WriteLine("Indexing complete.");
     }
 
     [GeneratedRegex("<[^>]+>")]
